@@ -10,7 +10,9 @@ require('dotenv').config()
 
 app.use(cors())
 app.use(express.static('public'))
+app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.json());
 
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html')
@@ -28,50 +30,39 @@ const noteSchema = new Schema({
 const bookSchema = new Schema({
   title: { type: String, required: true },
   notes: {type: [noteSchema]},
-  followers
 });
 const userSchema = new Schema({
     username: { type: String, required: true, unique: true},
-    password: { type: String },
     email: { type: String, required: true, unique: true },
     books: { type: [bookSchema]}
   });
 
-userSchema.pre('save', async function(next) {
-    if (this.isModified('password')) {
-        try {
-            const hash = await bcrypt.hash(this.password, SALT_ROUNDS);
-            this.password = hash;
-            next();
-        } catch (err) {
-            next(err);
-        }
-    } else {
-        next();
-    }
-});
+
 
 const User = mongoose.model('User', userSchema);
 const Book = mongoose.model('Book', bookSchema);
 const Note = mongoose.model('Note', noteSchema);
 
-app.post('/register', (req, res) => {
-    const { username, password, email } = req.body;
+app.post('/register', async (req, res) => {
+    const { username, email } = req.body;
     
-    const existingUser = User.findOne({email}, (err, existingUser) => {
-        if (err) return res.status(500).json({ error: 'Server error' });
-        if (existingUser) return res.status(400).json({ message: 'Email already in use' });
+    try {
+        const existingUser = await User.findOne({email});
+        if (existingUser) {
+            return res.status(400).json({ message: 'Email already in use' });
+        }
         
-        const newUser = new User({ username, password, email });
-        newUser.save((err, user) => {
-            if (err) return res.status(500).json({ error: 'error saving user' });
-            res.status(201).json({ message: 'User registered successfully', userId: user._id });
-        });
-    });
-    
+        const newUser = new User({ username, email });
+        const savedUser = await newUser.save();
+        console.log('User saved:', savedUser); // Debug log
+        res.status(201).json({ message: 'User registered successfully', userId: savedUser._id });
+    } catch (err) {
+        console.error('Server error:', err); // Debug log
+        return res.status(500).json({ error: 'Server error' });
+    }
 });
 
-app.post('/login', (req, res) => {
-    const { username, password } = req.body;
 
-})
+app.listen(3000, () => {
+    console.log('Server running on port 3000');
+});

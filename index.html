@@ -14,6 +14,7 @@
         <input type="email" id="email" name="email" required><br><br>
         <button type="submit">Submit</button>
     </form>
+    <div id="statusMessage"></div>
 
     <script>
         document.getElementById('registerForm').addEventListener('submit', function(event) {
@@ -21,19 +22,33 @@
             
             const username = document.getElementById('username').value;
             const email = document.getElementById('email').value;
+            const statusMessage = document.getElementById('statusMessage');
 
-            fetch('.../users', {
+            fetch('/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ username: username, email: email })
             })
-            .then(response => response.json())
+            .then(response => {
+                
+                return response.json().then(data => {
+                    if (!response.ok) {
+                        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+                    }
+                    return data;
+                });
+            })
             .then(data => {
-                console.log('Success:', data);
+                console.log('Received data:', data); // Debug log
+                statusMessage.style.color = 'green';
+                statusMessage.textContent = `User registered successfully (User ID: ${data.userId})`;
+                document.getElementById('registerForm').reset();
             })
             .catch((error) => {
+                statusMessage.style.color = 'red';
+                statusMessage.textContent = error.message;
                 console.error('Error:', error);
             });
         });
