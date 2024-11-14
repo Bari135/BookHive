@@ -43,22 +43,33 @@ const User = mongoose.model('User', userSchema);
 const Book = mongoose.model('Book', bookSchema);
 const Note = mongoose.model('Note', noteSchema);
 
-app.post('/register', async (req, res) => {
+app.post('/register', async(req, res) => {
     const { username, email } = req.body;
     
     try {
         const existingUser = await User.findOne({email});
         if (existingUser) {
-            return res.status(400).json({ message: 'Email already in use' });
+            return res.json({ message: 'Email already in use' });
         }
         
         const newUser = new User({ username, email });
         const savedUser = await newUser.save();
-        console.log('User saved:', savedUser); // Debug log
-        res.status(201).json({ message: 'User registered successfully', userId: savedUser._id });
+        console.log('User saved:', savedUser); 
+        return res.json({ message: 'User registered successfully', userId: savedUser._id });
     } catch (err) {
-        console.error('Server error:', err); // Debug log
-        return res.status(500).json({ error: 'Server error' });
+        return res.json({ error: 'Server error' });
+    }
+});
+
+app.get('/users/:_id/books', async(req, res)=>{
+    const userId = req.params._id;
+    try {
+        const user = await User.findById(userId);
+        if (!user) res.json({message: 'user not found'});
+        res.json(user.books);
+
+    } catch (err){
+        res.json({message: 'server error'});
     }
 });
 
