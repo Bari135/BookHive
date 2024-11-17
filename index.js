@@ -60,19 +60,66 @@ app.post('/register', async(req, res) => {
         return res.json({ error: 'Server error' });
     }
 });
-
-app.get('/users/:_id/books', async(req, res)=>{
+  
+app.get('/users/:_id/books', async(req, res) => {
     const userId = req.params._id;
     try {
         const user = await User.findById(userId);
         if (!user) res.json({message: 'user not found'});
-        res.json(user.books);
-
-    } catch (err){
+        //if user found
+        res.sendFile(__dirname + '/books.html')
+        //res.redirect(`/users/${userId}/books`);
+    } catch (err) {
         res.json({message: 'server error'});
     }
 });
 
+app.post('/users/:_id/books', async(req, res) => {
+    const userId = req.params._id;
+  
+    try {
+        const user = await User.findById(userId);
+        if (!user) res.json({message: 'user not found'});
+        //if user found
+        const newBook = new Book( { title:bookTitle });
+        user.books.push(newBook);
+        await user.save();
+        res.redirect(`/users/${userId}/books`); // Redirect back to book list page
+
+    } catch (err) {
+        res.json({message: 'server error'});
+    }
+  });
+
+app.get('/users/:_id/loadBooks', async (req, res) => {
+    const userId = req.params._id;
+    try {
+        const user = await User.findById(userId);
+        if (!user) return res.json({message: 'user not found'});
+        res.json(user.books);
+    } catch (err) {
+        console.error(err);
+        res.json({message: 'server error'});
+    }
+});
+
+app.post('/users/:_id/addbook', async(req, res) => {
+    const userId = req.params._id;
+    const { booktitle } = req.body;
+    
+    try {
+        const user = await User.findById(userId);
+        if (!user) return res.json({message: 'user not found'});
+
+        const newBook = new Book({ title: booktitle });
+        user.books.push(newBook);
+        await user.save();
+        res.json({message: 'book added successfully', books: user.books});
+    } catch (err) {
+        console.error(err);
+        res.json({message: 'server error'});
+    }
+});
 
 app.listen(3000, () => {
     console.log('Server running on port 3000');

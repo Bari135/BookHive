@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User's Book List</title>
+</head>
+<body>
+
+  <h1>User's Book List</h1>
+
+  <!-- List of books will be populated here -->
+  <ul id="bookList"></ul>
+
+  <!-- Form to add a new book -->
+  <h2>Add a New Book</h2>
+  <form id="addBookForm" method="post">
+    <input type="text" id="bookTitle" name="title" placeholder="Book title" required />
+    <button type="submit">Add Book</button>
+  </form>
+
+  <script>
+    // Extract user ID from the URL
+    const userId = window.location.pathname.split('/')[2];
+
+    // Function to fetch and display books
+    async function fetchBooks() {
+      try {
+        const response = await fetch(`/users/${userId}/loadBooks`);
+        const books = await response.json();
+        console.log('Books:', books);
+        const bookList = document.getElementById('bookList');
+        bookList.innerHTML = ''; // Clear list
+
+        // Update how books are displayed
+        books.forEach(book => {
+          const li = document.createElement('li');
+          li.textContent = book.title; // changed from book to book.title
+          bookList.appendChild(li);
+        });
+      } catch (error) {
+        console.error('Error fetching books:', error);
+      }
+    }
+
+    // Call fetchBooks on page load
+    fetchBooks();
+
+    // Handle form submission for adding a new book
+    document.getElementById('addBookForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const bookTitle = document.getElementById('bookTitle').value;
+
+      try {
+        const response = await fetch(`/users/${userId}/addbook`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booktitle: bookTitle })
+        });
+        
+        const result = await response.json();
+        if (result.message === 'book added successfully') {
+          document.getElementById('bookTitle').value = '';
+          fetchBooks();
+        } else {
+          console.error('Failed to add book:', result.message);
+        }
+      } catch (error) {
+        console.error('Error adding book:', error);
+      }
+    });
+  </script>
+
+</body>
+</html>
