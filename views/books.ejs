@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title><%= username %>'s Books</title>
+    <style>
+        .book-container {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        .notes-form {
+            margin-top: 10px;
+            padding: 10px;
+        }
+        .notes-list {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1><%= username %>'s Book List</h1>
+    <div id="bookList"></div>
+    <div>
+        <input type="text" id="bookTitle" placeholder="Enter book title">
+        <button onclick="addBook()">Add Book</button>
+    </div>
+
+    <script>
+        const userId = '<%= userId %>';
+        
+        document.addEventListener('DOMContentLoaded', loadBooks);
+
+        async function loadBooks() {
+            const response = await fetch(`/users/${userId}/loadBooks`);
+            const books = await response.json();
+            const bookList = document.getElementById('bookList');
+            bookList.innerHTML = books.map(book => `
+                <div class="book-container">
+                    <h3>${book.title}</h3>
+                    
+                    <!-- Notes Form -->
+                    <div class="notes-form">
+                        <input type="text" id="noteTitle-${book._id}" placeholder="Note title">
+                        <textarea id="noteContent-${book._id}" placeholder="Note content"></textarea>
+                        <button onclick="addNote('${book._id}')">Add Note</button>
+                    </div>
+
+                    <!-- Notes List -->
+                    <div class="notes-list" id="notesList-${book._id}">
+                        <h4>Notes:</h4>
+                        <button onclick="loadNotes('${book._id}')">View Notes</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function addBook() {
+            const booktitle = document.getElementById('bookTitle').value;
+            if (!booktitle) return;
+
+            await fetch(`/users/${userId}/addbook`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ booktitle })
+            });
+
+            loadBooks();
+            document.getElementById('bookTitle').value = '';
+        }
+
+        async function addNote(bookId) {
+            const title = document.getElementById(`noteTitle-${bookId}`).value;
+            const content = document.getElementById(`noteContent-${bookId}`).value;
+
+            if (!title || !content) return;
+
+            try {
+                const response = await fetch(`/users/${userId}/books/${bookId}/notes`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ title, content })
+                });
+
+                const result = await response.json();
+                if (result.message === 'note added successfully') {
+                    // Clear the form
+                    document.getElementById(`noteTitle-${bookId}`).value = '';
+                    document.getElementById(`noteContent-${bookId}`).value = '';
+                    // Reload notes for this book
+                    loadNotes(bookId);
+                }
+            } catch (err) {
+                console.error('Error adding note:', err);
+            }
+        }
+
+        async function loadNotes(bookId) {
+            try {
+                const response = await fetch(`/users/${userId}/books/${bookId}/notes`);
+                const notes = await response.json();
+                const notesListDiv = document.getElementById(`notesList-${bookId}`);
+                
+                let notesHtml = '<h4>Notes:</h4>';
+                if (notes.length === 0) {
+                    notesHtml += '<p>No notes yet</p>';
+                } else {
+                    notesHtml += '<ul>' + notes.map(note => `
+                        <li>
+                            <strong>${note.title}</strong>
+                            <p>${note.content}</p>
+                            <small>${new Date(note.time).toLocaleString()}</small>
+                        </li>
+                    `).join('') + '</ul>';
+                }
+                
+                notesListDiv.innerHTML = notesHtml;
+            } catch (err) {
+                console.error('Error loading notes:', err);
+            }
+        }
+    </script>
+</body>
+</html>

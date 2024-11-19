@@ -9,10 +9,9 @@
 
   <h1>User's Book List</h1>
 
-  <!-- List of books will be populated here -->
+ 
   <ul id="bookList"></ul>
 
-  <!-- Form to add a new book -->
   <h2>Add a New Book</h2>
   <form id="addBookForm" method="post">
     <input type="text" id="bookTitle" name="title" placeholder="Book title" required />
@@ -20,10 +19,10 @@
   </form>
 
   <script>
-    // Extract user ID from the URL
+
     const userId = window.location.pathname.split('/')[2];
 
-    // Function to fetch and display books
+    //fetch and display books
     async function fetchBooks() {
       try {
         const response = await fetch(`/users/${userId}/loadBooks`);
@@ -32,7 +31,7 @@
         const bookList = document.getElementById('bookList');
         bookList.innerHTML = ''; // Clear list
 
-        // Update how books are displayed
+
         books.forEach(book => {
           const li = document.createElement('li');
           li.textContent = book.title; // changed from book to book.title
@@ -46,7 +45,7 @@
     // Call fetchBooks on page load
     fetchBooks();
 
-    // Handle form submission for adding a new book
+
     document.getElementById('addBookForm').addEventListener('submit', async (event) => {
       event.preventDefault();
       const bookTitle = document.getElementById('bookTitle').value;

@@ -14,6 +14,9 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.json());
 
+app.set('view engine', 'ejs');
+app.set('views', './views');
+
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html')
 });
@@ -55,7 +58,7 @@ app.post('/register', async(req, res) => {
         const newUser = new User({ username, email });
         const savedUser = await newUser.save();
         console.log('User saved:', savedUser); 
-        return res.json({ message: 'User registered successfully', userId: savedUser._id });
+        res.redirect(`/users/${savedUser._id}/books`);
     } catch (err) {
         return res.json({ error: 'Server error' });
     }
@@ -65,31 +68,14 @@ app.get('/users/:_id/books', async(req, res) => {
     const userId = req.params._id;
     try {
         const user = await User.findById(userId);
-        if (!user) res.json({message: 'user not found'});
-        //if user found
-        res.sendFile(__dirname + '/books.html')
-        //res.redirect(`/users/${userId}/books`);
+        if (!user) return res.json({message: 'user not found'});
+        
+        res.render('books', { username: user.username, userId: userId });
     } catch (err) {
         res.json({message: 'server error'});
     }
 });
 
-app.post('/users/:_id/books', async(req, res) => {
-    const userId = req.params._id;
-  
-    try {
-        const user = await User.findById(userId);
-        if (!user) res.json({message: 'user not found'});
-        //if user found
-        const newBook = new Book( { title:bookTitle });
-        user.books.push(newBook);
-        await user.save();
-        res.redirect(`/users/${userId}/books`); // Redirect back to book list page
-
-    } catch (err) {
-        res.json({message: 'server error'});
-    }
-  });
 
 app.get('/users/:_id/loadBooks', async (req, res) => {
     const userId = req.params._id;
@@ -115,6 +101,57 @@ app.post('/users/:_id/addbook', async(req, res) => {
         user.books.push(newBook);
         await user.save();
         res.json({message: 'book added successfully', books: user.books});
+    } catch (err) {
+        console.error(err);
+        res.json({message: 'server error'});
+    }
+});
+
+app.post('/users/:_id/books/:bookId/notes', async(req, res) => {
+    const userId = req.params._id;
+    const bookId = req.params.bookId;
+    const { title, content } = req.body;
+    
+    try {
+        const user = await User.findById(userId);
+        if (!user) return res.json({message: 'user not found'});
+
+        // Find the book in the user's books array
+        const book = user.books.id(bookId);
+        if (!book) return res.json({message: 'book not found'});
+
+        // Create and add the new note
+        const newNote = new Note({
+            userId,
+            title,
+            content
+        });
+
+        book.notes.push(newNote);
+        await user.save();
+        
+        res.json({
+            message: 'note added successfully',
+            book: book
+        });
+    } catch (err) {
+        console.error(err);
+        res.json({message: 'server error'});
+    }
+});
+
+app.get('/users/:_id/books/:bookId/notes', async(req, res) => {
+    const userId = req.params._id;
+    const bookId = req.params.bookId;
+    
+    try {
+        const user = await User.findById(userId);
+        if (!user) return res.json({message: 'user not found'});
+
+        const book = user.books.id(bookId);
+        if (!book) return res.json({message: 'book not found'});
+
+        res.json(book.notes);
     } catch (err) {
         console.error(err);
         res.json({message: 'server error'});
