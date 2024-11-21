@@ -13,12 +13,10 @@ const startConsumer = async () => {
             switch (topic) {
                 case 'book-events':
                     console.log(`📚 New book activity: ${data.username} added "${data.bookTitle}"`);
-                    // Here you could implement notification logic (e.g., email, websocket)
                     break;
                     
                 case 'note-events':
                     console.log(`📝 New note activity: ${data.username} added a note to "${data.bookTitle}"`);
-                    // Here you could implement notification logic
                     break;
             }
         },
