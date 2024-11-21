@@ -10,6 +10,8 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
 const googleConfig = require('./config/google');
+const { produceMessage } = require('./kafka/producer');
+const { startConsumer } = require('./kafka/kafkaConsumer');
 
 
 app.use(cors())
@@ -187,6 +189,14 @@ app.post('/users/:_id/addbook', isAuthenticated, async(req, res) => {
         const newBook = new Book({ title: booktitle });
         user.books.push(newBook);
         await user.save();
+
+        await produceMessage('book-events', {
+            username: user.username,
+            bookTitle: booktitle,
+            timestamp: new Date(),
+            action: 'add_book'
+        });
+
         res.json({message: 'book added successfully', books: user.books});
     } catch (err) {
         console.error(err);
@@ -202,11 +212,9 @@ app.post('/users/:_id/books/:bookId/notes', isAuthenticated, async(req, res) => 
     try {
         const user = await User.findById(userId);
         if (!user) return res.json({message: 'user not found'});
-
         
         const book = user.books.id(bookId);
         if (!book) return res.json({message: 'book not found'});
-
         
         const newNote = new Note({
             userId,
@@ -216,6 +224,14 @@ app.post('/users/:_id/books/:bookId/notes', isAuthenticated, async(req, res) => 
 
         book.notes.push(newNote);
         await user.save();
+
+        await produceMessage('note-events', {
+            username: user.username,
+            bookTitle: book.title,
+            noteTitle: title,
+            timestamp: new Date(),
+            action: 'add_note'
+        });
         
         res.json({
             message: 'note added successfully',
@@ -248,3 +264,5 @@ app.get('/users/:_id/books/:bookId/notes', async(req, res) => {
 app.listen(3000, () => {
     console.log('Server running on port 3000');
 });
+
+startConsumer().catch(console.error);

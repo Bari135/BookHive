@@ -13,10 +13,11 @@
 		"dotenv": "^8.2.0",
 		"ejs": "^3.1.10",
 		"express": "^4.16.4",
+		"express-session": "^1.17.3",
+		"kafkajs": "^2.2.4",
 		"mongoose": "^5.11.15",
 		"passport": "^0.6.0",
-		"passport-google-oauth20": "^2.0.0",
-		"express-session": "^1.17.3"
+		"passport-google-oauth20": "^2.0.0"
 	},
 	"repository": {
 		"url": "https://github.com/Bari135/BookHive"
